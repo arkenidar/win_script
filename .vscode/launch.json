@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "lua-local",
+            // https://marketplace.visualstudio.com/items?itemName=tomblind.local-lua-debugger-vscode
+            "request": "launch",
+            "name": "SDL , Debug ( in native LuaJIT thanks to native SDL )",
+            "program": {
+                "lua": "luajit",
+                "file": "ray3d-sdl2.lua"
+            }
+        }
+    ]
+}
