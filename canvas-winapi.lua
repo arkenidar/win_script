@@ -1,4 +1,3 @@
-#!/usr/bin/env luajit
 -- canvas.lua - Simple 2D canvas with rectangle drawing
 -- Run: wine luajit.exe canvas.lua
 
@@ -60,10 +59,14 @@ local user32 = ffi.load("user32")
 local gdi32 = ffi.load("gdi32")
 
 local function wstr(str)
-    if not str then return nil end
+    if not str then
+        return nil
+    end
     local len = #str
     local b = ffi.new("wchar_t[?]", len + 1)
-    for i = 0, len - 1 do b[i] = string.byte(str, i + 1) end
+    for i = 0, len - 1 do
+        b[i] = string.byte(str, i + 1)
+    end
     b[len] = 0
     return b
 end
@@ -75,7 +78,7 @@ local function WndProc(hWnd, msg, wParam, lParam)
 
         -- Create red brush and pen
         local hBrush = gdi32.CreateSolidBrush(0x000000FF) -- RGB(255, 0, 0) = red
-        local hPen = gdi32.CreatePen(0, 2, 0x00000000)    -- PS_SOLID, black border
+        local hPen = gdi32.CreatePen(0, 2, 0x00000000) -- PS_SOLID, black border
 
         local oldBrush = gdi32.SelectObject(hdc, hBrush)
         local oldPen = gdi32.SelectObject(hdc, hPen)
@@ -91,7 +94,7 @@ local function WndProc(hWnd, msg, wParam, lParam)
 
         user32.EndPaint(hWnd, ps)
         return 0
-    elseif msg == 256 then     -- WM_KEYDOWN
+    elseif msg == 256 then -- WM_KEYDOWN
         if wParam == 0x1B then -- VK_ESCAPE
             user32.PostQuitMessage(0)
             return 0
@@ -119,7 +122,7 @@ local function main()
     wc.hInstance = hInstance
     wc.hIcon = nil
     wc.hCursor = user32.LoadCursorW(nil, ffi.cast("LPCWSTR", 32512)) -- IDC_ARROW
-    wc.hbrBackground = ffi.cast("HBRUSH", 6)                         -- WHITE_BRUSH
+    wc.hbrBackground = ffi.cast("HBRUSH", 6) -- WHITE_BRUSH
     wc.lpszMenuName = nil
     wc.lpszClassName = className
     wc.hIconSm = nil
@@ -130,8 +133,21 @@ local function main()
     end
     print("[OK] Class registered")
 
-    local hwnd = user32.CreateWindowExW(0, className, wstr("2D Canvas"), 0x00CF0000, 100, 100, 400, 300, nil, nil,
-        hInstance, nil)
+    local hwnd =
+        user32.CreateWindowExW(
+        0,
+        className,
+        wstr("2D Canvas"),
+        0x00CF0000,
+        100,
+        100,
+        400,
+        300,
+        nil,
+        nil,
+        hInstance,
+        nil
+    )
     if hwnd == nil then
         print("ERROR: CreateWindowExW")
         return

@@ -1,4 +1,3 @@
-#!/usr/bin/env luajit
 -- canvas_ray.lua - Simple raytracer with dynamic resolution
 -- Run: wine luajit.exe canvas_ray.lua
 
@@ -66,10 +65,14 @@ local user32 = ffi.load("user32")
 local gdi32 = ffi.load("gdi32")
 
 local function wstr(str)
-    if not str then return nil end
+    if not str then
+        return nil
+    end
     local len = #str
     local b = ffi.new("wchar_t[?]", len + 1)
-    for i = 0, len - 1 do b[i] = string.byte(str, i + 1) end
+    for i = 0, len - 1 do
+        b[i] = string.byte(str, i + 1)
+    end
     b[len] = 0
     return b
 end
@@ -88,9 +91,9 @@ local function raytrace(w, h, angle)
     local sin_a = math.sin(angle)
 
     local spheres = {
-        { x = 0,          y = 0, z = -5,             radius = 1,   r = 255, g = 100, b = 100, reflectivity = 0.7 }, -- Red center (reflective)
-        { x = -2 * cos_a, y = 0, z = -5 + 2 * sin_a, radius = 0.8, r = 100, g = 200, b = 100, reflectivity = 0.6 }, -- Green (reflective)
-        { x = 2 * cos_a,  y = 0, z = -5 - 2 * sin_a, radius = 0.8, r = 100, g = 150, b = 255, reflectivity = 0.6 }  -- Blue (reflective)
+        {x = 0, y = 0, z = -5, radius = 1, r = 255, g = 100, b = 100, reflectivity = 0.7}, -- Red center (reflective)
+        {x = -2 * cos_a, y = 0, z = -5 + 2 * sin_a, radius = 0.8, r = 100, g = 200, b = 100, reflectivity = 0.6}, -- Green (reflective)
+        {x = 2 * cos_a, y = 0, z = -5 - 2 * sin_a, radius = 0.8, r = 100, g = 150, b = 255, reflectivity = 0.6} -- Blue (reflective)
     }
 
     local light_x, light_y, light_z = 0.577, 0.577, 0.577
@@ -128,7 +131,9 @@ local function raytrace(w, h, angle)
 
     -- Helper function to trace a ray and return color
     local function trace_ray(ray_x, ray_y, ray_z, depth, origin_x, origin_y, origin_z)
-        if depth > 2 then return { r = 30, g = 40, b = 60 } end -- Max reflection depth
+        if depth > 2 then
+            return {r = 30, g = 40, b = 60}
+        end -- Max reflection depth
 
         -- Default origin is camera at (0,0,0)
         origin_x = origin_x or 0
@@ -152,7 +157,7 @@ local function raytrace(w, h, angle)
                     closest_t = t
                     closest_sphere_idx = nil
                     is_floor = true
-                    hit_normal = { x = 0, y = 1, z = 0 } -- Floor normal points up
+                    hit_normal = {x = 0, y = 1, z = 0} -- Floor normal points up
                 end
             end
         end
@@ -188,11 +193,11 @@ local function raytrace(w, h, angle)
         end
 
         if closest_sphere_idx == nil and not is_floor then
-            return { r = 30, g = 40, b = 60 } -- Background color
+            return {r = 30, g = 40, b = 60} -- Background color
         end
 
         if not hit_normal then
-            return { r = 30, g = 40, b = 60 } -- Safety check: no valid hit
+            return {r = 30, g = 40, b = 60} -- Safety check: no valid hit
         end
 
         if is_floor then
@@ -201,9 +206,9 @@ local function raytrace(w, h, angle)
             local hit_y = origin_y + ray_y * closest_t
             local hit_z = origin_z + ray_z * closest_t
             local checker = (math.floor(hit_x) + math.floor(hit_z)) % 2
-            local floor_color = { r = 200, g = 200, b = 200 }
+            local floor_color = {r = 200, g = 200, b = 200}
             if checker == 1 then
-                floor_color = { r = 100, g = 100, b = 100 }
+                floor_color = {r = 100, g = 100, b = 100}
             end
 
             -- Check shadow
@@ -220,8 +225,8 @@ local function raytrace(w, h, angle)
             local reflect_dir_z = ray_z
 
             -- Normalize reflected direction
-            local reflect_len = math.sqrt(reflect_dir_x * reflect_dir_x + reflect_dir_y * reflect_dir_y +
-                reflect_dir_z * reflect_dir_z)
+            local reflect_len =
+                math.sqrt(reflect_dir_x * reflect_dir_x + reflect_dir_y * reflect_dir_y + reflect_dir_z * reflect_dir_z)
             reflect_dir_x = reflect_dir_x / reflect_len
             reflect_dir_y = reflect_dir_y / reflect_len
             reflect_dir_z = reflect_dir_z / reflect_len
@@ -263,12 +268,12 @@ local function raytrace(w, h, angle)
 
         -- If reflective, trace reflection
         if sphere.reflectivity > 0 then
-            local reflect_x = ray_x - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) *
-                hit_normal.x
-            local reflect_y = ray_y - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) *
-                hit_normal.y
-            local reflect_z = ray_z - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) *
-                hit_normal.z
+            local reflect_x =
+                ray_x - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) * hit_normal.x
+            local reflect_y =
+                ray_y - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) * hit_normal.y
+            local reflect_z =
+                ray_z - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) * hit_normal.z
 
             local reflect_color = trace_ray(reflect_x, reflect_y, reflect_z, depth + 1, hit_x, hit_y, hit_z)
 
@@ -334,11 +339,11 @@ bmi.bmiHeader.biCompression = 0
 -- raytrace(W, H, 0)
 
 local function WndProc(hWnd, msg, wParam, lParam)
-    if msg == 1 then                      -- WM_CREATE
+    if msg == 1 then -- WM_CREATE
         start_time = tonumber(kernel32.GetTickCount())
         user32.SetTimer(hWnd, 1, 16, nil) -- Timer every 16ms (~60 FPS target)
         return 0
-    elseif msg == 275 then                -- WM_TIMER
+    elseif msg == 275 then -- WM_TIMER
         if start_time then
             local elapsed_ms = tonumber(kernel32.GetTickCount()) - start_time
             local elapsed_s = elapsed_ms / 1000
@@ -353,7 +358,7 @@ local function WndProc(hWnd, msg, wParam, lParam)
         user32.KillTimer(hWnd, 1)
         user32.PostQuitMessage(0)
         return 0
-    elseif msg == 256 then     -- WM_KEYDOWN
+    elseif msg == 256 then -- WM_KEYDOWN
         if wParam == 0x1B then -- VK_ESCAPE
             user32.PostQuitMessage(0)
             return 0
@@ -364,8 +369,7 @@ local function WndProc(hWnd, msg, wParam, lParam)
 
         -- Display at 1:1 (no oversampling)
         if pixels and bmi then
-            gdi32.StretchDIBits(hdc, 0, 0, W, H,
-                0, 0, W, H, pixels, bmi, 0, 0x00CC0020)
+            gdi32.StretchDIBits(hdc, 0, 0, W, H, 0, 0, W, H, pixels, bmi, 0, 0x00CC0020)
         end
 
         user32.EndPaint(hWnd, ps)
@@ -381,9 +385,6 @@ local function WndProc(hWnd, msg, wParam, lParam)
         end
 
         user32.InvalidateRect(hWnd, nil, 0)
-        return 0
-    elseif msg == 2 then -- WM_DESTROY
-        user32.PostQuitMessage(0)
         return 0
     end
     return user32.DefWindowProcW(hWnd, msg, wParam, lParam)
@@ -416,9 +417,21 @@ local function main()
     end
     print("[OK] Class registered")
 
-    local hwnd = user32.CreateWindowExW(0, className, wstr("Raytracer"),
-        0x00CF0000, 100, 100, 640, 480,
-        nil, nil, hInstance, nil)
+    local hwnd =
+        user32.CreateWindowExW(
+        0,
+        className,
+        wstr("Raytracer"),
+        0x00CF0000,
+        100,
+        100,
+        640,
+        480,
+        nil,
+        nil,
+        hInstance,
+        nil
+    )
     if hwnd == nil then
         print("ERROR: CreateWindowExW")
         return
