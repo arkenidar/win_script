@@ -1,4 +1,3 @@
-#!/usr/bin/env luajit
 -- canvas-sdl2.lua - Simple 2D canvas with rectangle drawing using SDL2
 -- Run: luajit canvas-sdl2.lua
 
@@ -65,17 +64,33 @@ ffi.cdef [[
 ]]
 
 -- Try to load SDL2 library
-local sdl
-local ok, err = pcall(function()
-    if ffi.os == "Windows" then
-        sdl = ffi.load("SDL2")
-    elseif ffi.os == "OSX" then
-        sdl = ffi.load("SDL2")
-    else
-        -- Linux
-        sdl = ffi.load("SDL2")
+local function ffi_load_any(...)
+    local last_error
+    for index = 1, select("#", ...) do
+        local library_name = select(index, ...)
+        local ok, library_or_error = pcall(ffi.load, library_name)
+        if ok then
+            return library_or_error
+        end
+        last_error = library_or_error
     end
-end)
+    error(last_error)
+end
+
+local sdl
+local ok, err =
+    pcall(
+    function()
+        if ffi.os == "Windows" then
+            sdl = ffi.load("SDL2")
+        elseif ffi.os == "OSX" then
+            sdl = ffi.load("SDL2")
+        else
+            -- Linux
+            sdl = ffi_load_any("SDL2", "libSDL2-2.0.so.0", "libSDL2-2.0.so", "libSDL2.so.0", "libSDL2.so")
+        end
+    end
+)
 
 if not ok then
     print("ERROR: Failed to load SDL2 library")
@@ -106,10 +121,13 @@ local function main()
     print("[OK] SDL initialized")
 
     -- Create window
-    local window = sdl.SDL_CreateWindow(
+    local window =
+        sdl.SDL_CreateWindow(
         "2D Canvas (SDL2)",
-        100, 100, -- x, y position
-        400, 300, -- width, height
+        100,
+        100, -- x, y position
+        400,
+        300, -- width, height
         SDL_WINDOW_SHOWN
     )
 
@@ -121,11 +139,7 @@ local function main()
     print("[OK] Window created")
 
     -- Create renderer
-    local renderer = sdl.SDL_CreateRenderer(
-        window,
-        -1,
-        SDL_RENDERER_ACCELERATED + SDL_RENDERER_PRESENTVSYNC
-    )
+    local renderer = sdl.SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED + SDL_RENDERER_PRESENTVSYNC)
 
     if renderer == nil then
         print("ERROR: SDL_CreateRenderer failed: " .. ffi.string(sdl.SDL_GetError()))
@@ -160,12 +174,12 @@ local function main()
 
         -- Draw red filled rectangle
         sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255) -- Red
-        local fillRect = ffi.new("SDL_Rect", { x = 50, y = 50, w = 200, h = 150 })
+        local fillRect = ffi.new("SDL_Rect", {x = 50, y = 50, w = 200, h = 150})
         sdl.SDL_RenderFillRect(renderer, fillRect)
 
         -- Draw black border around rectangle
         sdl.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255) -- Black
-        local borderRect = ffi.new("SDL_Rect", { x = 50, y = 50, w = 200, h = 150 })
+        local borderRect = ffi.new("SDL_Rect", {x = 50, y = 50, w = 200, h = 150})
         sdl.SDL_RenderDrawRect(renderer, borderRect)
 
         -- Present

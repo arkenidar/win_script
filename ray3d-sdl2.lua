@@ -1,4 +1,3 @@
-#!/usr/bin/env luajit
 -- ray3d-sdl2.lua - Simple raytracer with dynamic resolution using SDL2
 -- Run: luajit ray3d-sdl2.lua
 
@@ -54,18 +53,36 @@ ffi.cdef [[
   int SDL_GetRendererOutputSize(SDL_Renderer* renderer, int* w, int* h);
 ]]
 
--- Try to load SDL2 library
-local sdl
-local ok, err = pcall(function()
-    if ffi.os == "Windows" then
-        sdl = ffi.load("SDL2")
-    elseif ffi.os == "OSX" then
-        sdl = ffi.load("SDL2")
-    else
-        -- Linux
-        sdl = ffi.load("SDL2")
+local function ffi_load_any(...)
+    local last_error
+    for index = 1, select("#", ...) do
+        local library_name = select(index, ...)
+        local ok, library_or_error = pcall(ffi.load, library_name)
+        if ok then
+            return library_or_error
+        end
+        last_error = library_or_error
     end
-end)
+    error(last_error)
+end
+
+-- Try to load SDL2 library
+
+local sdl
+local ok, err =
+    pcall(
+    function()
+        if ffi.os == "Windows" then
+            sdl = ffi.load("SDL2")
+        elseif ffi.os == "OSX" then
+            sdl = ffi.load("SDL2")
+        else
+            -- Linux
+            ---- sdl = ffi.load("SDL2")
+            sdl = ffi_load_any("SDL2", "libSDL2-2.0.so.0", "libSDL2-2.0.so", "libSDL2.so.0", "libSDL2.so")
+        end
+    end
+)
 
 if not ok then
     print("ERROR: Failed to load SDL2 library")
@@ -103,9 +120,9 @@ local function raytrace(w, h, angle)
     local sin_a = math.sin(angle)
 
     local spheres = {
-        { x = 0,          y = 0, z = -5,             radius = 1,   r = 255, g = 100, b = 100, reflectivity = 0.7 }, -- Red center (reflective)
-        { x = -2 * cos_a, y = 0, z = -5 + 2 * sin_a, radius = 0.8, r = 100, g = 200, b = 100, reflectivity = 0.6 }, -- Green (reflective)
-        { x = 2 * cos_a,  y = 0, z = -5 - 2 * sin_a, radius = 0.8, r = 100, g = 150, b = 255, reflectivity = 0.6 }  -- Blue (reflective)
+        {x = 0, y = 0, z = -5, radius = 1, r = 255, g = 100, b = 100, reflectivity = 0.7}, -- Red center (reflective)
+        {x = -2 * cos_a, y = 0, z = -5 + 2 * sin_a, radius = 0.8, r = 100, g = 200, b = 100, reflectivity = 0.6}, -- Green (reflective)
+        {x = 2 * cos_a, y = 0, z = -5 - 2 * sin_a, radius = 0.8, r = 100, g = 150, b = 255, reflectivity = 0.6} -- Blue (reflective)
     }
 
     local light_x, light_y, light_z = 0.577, 0.577, 0.577
@@ -143,7 +160,9 @@ local function raytrace(w, h, angle)
 
     -- Helper function to trace a ray and return color
     local function trace_ray(ray_x, ray_y, ray_z, depth, origin_x, origin_y, origin_z)
-        if depth > 2 then return { r = 30, g = 40, b = 60 } end -- Max reflection depth
+        if depth > 2 then
+            return {r = 30, g = 40, b = 60}
+        end -- Max reflection depth
 
         -- Default origin is camera at (0,0,0)
         origin_x = origin_x or 0
@@ -167,7 +186,7 @@ local function raytrace(w, h, angle)
                     closest_t = t
                     closest_sphere_idx = nil
                     is_floor = true
-                    hit_normal = { x = 0, y = 1, z = 0 } -- Floor normal points up
+                    hit_normal = {x = 0, y = 1, z = 0} -- Floor normal points up
                 end
             end
         end
@@ -203,11 +222,11 @@ local function raytrace(w, h, angle)
         end
 
         if closest_sphere_idx == nil and not is_floor then
-            return { r = 30, g = 40, b = 60 } -- Background color
+            return {r = 30, g = 40, b = 60} -- Background color
         end
 
         if not hit_normal then
-            return { r = 30, g = 40, b = 60 } -- Safety check: no valid hit
+            return {r = 30, g = 40, b = 60} -- Safety check: no valid hit
         end
 
         if is_floor then
@@ -216,9 +235,9 @@ local function raytrace(w, h, angle)
             local hit_y = origin_y + ray_y * closest_t
             local hit_z = origin_z + ray_z * closest_t
             local checker = (math.floor(hit_x) + math.floor(hit_z)) % 2
-            local floor_color = { r = 200, g = 200, b = 200 }
+            local floor_color = {r = 200, g = 200, b = 200}
             if checker == 1 then
-                floor_color = { r = 100, g = 100, b = 100 }
+                floor_color = {r = 100, g = 100, b = 100}
             end
 
             -- Check shadow
@@ -235,8 +254,8 @@ local function raytrace(w, h, angle)
             local reflect_dir_z = ray_z
 
             -- Normalize reflected direction
-            local reflect_len = math.sqrt(reflect_dir_x * reflect_dir_x + reflect_dir_y * reflect_dir_y +
-                reflect_dir_z * reflect_dir_z)
+            local reflect_len =
+                math.sqrt(reflect_dir_x * reflect_dir_x + reflect_dir_y * reflect_dir_y + reflect_dir_z * reflect_dir_z)
             reflect_dir_x = reflect_dir_x / reflect_len
             reflect_dir_y = reflect_dir_y / reflect_len
             reflect_dir_z = reflect_dir_z / reflect_len
@@ -278,12 +297,12 @@ local function raytrace(w, h, angle)
 
         -- If reflective, trace reflection
         if sphere.reflectivity > 0 then
-            local reflect_x = ray_x - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) *
-                hit_normal.x
-            local reflect_y = ray_y - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) *
-                hit_normal.y
-            local reflect_z = ray_z - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) *
-                hit_normal.z
+            local reflect_x =
+                ray_x - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) * hit_normal.x
+            local reflect_y =
+                ray_y - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) * hit_normal.y
+            local reflect_z =
+                ray_z - 2 * (ray_x * hit_normal.x + ray_y * hit_normal.y + ray_z * hit_normal.z) * hit_normal.z
 
             local reflect_color = trace_ray(reflect_x, reflect_y, reflect_z, depth + 1, hit_x, hit_y, hit_z)
 
@@ -344,12 +363,7 @@ local function main()
     print("[OK] SDL initialized")
 
     -- Create window
-    local window = sdl.SDL_CreateWindow(
-        "Raytracer (SDL2)",
-        100, 100,
-        W, H,
-        SDL_WINDOW_SHOWN + SDL_WINDOW_RESIZABLE
-    )
+    local window = sdl.SDL_CreateWindow("Raytracer (SDL2)", 100, 100, W, H, SDL_WINDOW_SHOWN + SDL_WINDOW_RESIZABLE)
 
     if window == nil then
         print("ERROR: SDL_CreateWindow failed: " .. ffi.string(sdl.SDL_GetError()))
@@ -359,11 +373,7 @@ local function main()
     print("[OK] Window created")
 
     -- Create renderer
-    local renderer = sdl.SDL_CreateRenderer(
-        window,
-        -1,
-        SDL_RENDERER_ACCELERATED
-    )
+    local renderer = sdl.SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED)
 
     if renderer == nil then
         print("ERROR: SDL_CreateRenderer failed: " .. ffi.string(sdl.SDL_GetError()))
